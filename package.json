@@ -1,0 +1,16 @@
+{
+  "name": "lan-chat-project",
+  "version": "1.0.0",
+  "description": "Local Chat Server",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.22.2",
+    "multer": "^2.1.1",
+    "openssl": "^2.0.0",
+    "socket.io": "^4.8.3",
+    "sqlite3": "^6.0.1"
+  },
+  "scripts": {
+    "start": "node server.js"
+  }
+}

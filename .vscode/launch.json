@@ -1,0 +1,34 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "تشغيل السيرفر (Node.js)",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/server.js",
+            "console": "integratedTerminal",
+            "serverReadyAction": {
+                "pattern": "listening on port ([0-9]+)",
+                "uriFormat": "http://localhost:%s",
+                "action": "openExternally"
+            }
+        },
+        {
+            "type": "msedge",
+            "request": "launch",
+            "name": "فتح المتصفح (Edge)",
+            "url": "http://localhost:3000",
+            "webRoot": "${workspaceFolder}"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "تشغيل المشروع بالكامل",
+            "configurations": ["تشغيل السيرفر (Node.js)", "فتح المتصفح (Edge)"]
+        }
+    ]
+}

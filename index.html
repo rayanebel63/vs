@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>دردشة الشبكة المحلية</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Add viewport for responsiveness -->
+    <link rel="stylesheet" href="style.css"> <!-- Link to the new CSS file -->
+</head>
+<body>
+
+    <div id="chat-app">
+        <aside id="sidebar">
+            <div class="sidebar-header">
+                <div class="user-avatar-main"></div>
+                <div class="sidebar-icons">
+                    <button id="theme-toggle" title="تبديل الوضع">🌙</button>
+                </div>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" placeholder="البحث أو بدء دردشة جديدة">
+            </div>
+            <ul id="online-users-list" class="chat-list"></ul>
+        </aside>
+
+        <div id="chat-window">
+            <div id="room-header">
+                <div style="display:flex; align-items:center;">
+                    <div class="avatar-placeholder"></div>
+                    <span id="current-chat-name">غرفة: General</span>
+                </div>
+                <div class="header-icons">
+                    <button id="logout" title="تسجيل الخروج">🚪</button>
+                </div>
+            </div>
+            <div id="output"></div>
+            <div id="feedback"></div>
+            
+            <div id="controls">
+                <input id="handle" type="text" placeholder="الاسم" />
+                <input id="message" type="text" placeholder="الرسالة..." />
+                <button id="attach-btn" title="إرفاق ملف">📎</button>
+                <button id="record-btn" title="تسجيل صوتي">🎤</button>
+                <button id="send" title="إرسال">✈️</button> <!-- Changed to airplane icon -->
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="file-input" style="display:none" />
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>

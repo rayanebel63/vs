@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق الدردشة الآمن</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💬</text></svg>">
+</head>
+<body>
+    <div id="auth-screen" class="auth-screen">
+        <!-- هذا العنصر سيتم إخفاؤه بواسطة JS بعد التحقق -->
+        <p>الرجاء إدخال الكود السري لبدء الدردشة.</p>
+    </div>
+
+    <div id="chat-app" class="chat-app" style="display: none;">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3>المستخدمون المتصلون</h3>
+                <button id="theme-toggle" class="theme-toggle-btn">تبديل الوضع</button>
+            </div>
+            <ul id="online-users-list" class="online-users-list">
+                <!-- قائمة المستخدمين ستضاف هنا بواسطة JS -->
+            </ul>
+            <button id="logout" class="logout-btn">تسجيل الخروج</button>
+        </aside>
+
+        <main class="chat-main">
+            <header class="chat-header">
+                <h2 id="current-chat-name">غرفة: General</h2>
+                <div id="call-actions" style="display: none;">
+                    <button id="start-call-btn" class="action-btn">📞</button>
+                </div>
+            </header>
+            <!-- واجهة المكالمة -->
+            <div id="call-overlay" class="call-overlay" style="display: none;">
+                <div class="call-info">
+                    <p id="call-status">جاري الاتصال...</p>
+                    <button id="hangup-btn" class="logout-btn">إنهاء المكالمة</button>
+                    <button id="accept-call-btn" class="send-btn" style="display: none;">قبول</button>
+                </div>
+            </div>
+            <div id="chat-window" class="chat-window">
+                <div id="output" class="chat-messages">
+                    <!-- الرسائل ستظهر هنا -->
+                </div>
+                <div id="feedback" class="chat-feedback">
+                    <!-- مؤشر الكتابة سيظهر هنا -->
+                </div>
+            </div>
+            <footer class="chat-input-area">
+                <input type="text" id="handle" placeholder="اسمك" class="input-field handle-input" disabled>
+                <input type="text" id="message" placeholder="اكتب رسالتك..." class="input-field message-input">
+                <div class="input-actions">
+                    <button id="attach-btn" class="action-btn">📎</button>
+                    <input type="file" id="file-input" style="display: none;">
+                    <button id="record-btn" class="action-btn">🎤</button>
+                    <button id="send" class="send-btn">إرسال</button>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>
