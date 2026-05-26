@@ -5,7 +5,6 @@ const handle = document.getElementById('handle');
 const btn = document.getElementById('send');
 const logoutBtn = document.getElementById('logout');
 const attachBtn = document.getElementById('attach-btn');
-const recordBtn = document.getElementById('record-btn');
 const fileInput = document.getElementById('file-input');
 const output = document.getElementById('output');
 const feedback = document.getElementById('feedback');
@@ -13,15 +12,17 @@ const chatApp = document.getElementById('chat-app');
 const onlineUsersList = document.getElementById('online-users-list');
 const themeToggle = document.getElementById('theme-toggle'); // New element
 const currentChatName = document.getElementById('current-chat-name');
+const changeNameBtn = document.getElementById('change-name-btn');
+const clearHistoryBtn = document.getElementById('clear-history-btn');
 
 const authScreen = document.getElementById('auth-screen');
-let currentChatTarget = 'General'; // 'General' means the group, otherwise it's a username
+let currentChatTarget = 'General'; // 'General' for group, otherwise username
 let messagesStore = { 'General': [] };
 let usersList = [];
 
 let mediaRecorder;
 let audioChunks = [];
-let myKeyPair; // لتخزين مفاتيح التشفير الخاصة بالمستخدم
+let myKeyPair; // To store user encryption keys
 
 // WebRTC Variables
 let peerConnection;
@@ -34,7 +35,7 @@ const callStatus = document.getElementById('call-status');
 const hangupBtn = document.getElementById('hangup-btn');
 const acceptCallBtn = document.getElementById('accept-call-btn');
 
-// ذاكرة محلية لتخزين النصوص الأصلية للرسائل التي ترسلها (لأنها مشفرة للمستقبل فقط)
+// Local memory to store original text of sent messages (encrypted for recipient only)
 let encryptionCache = new Map(JSON.parse(localStorage.getItem('encryption_cache') || '[]'));
 
 // --- Theme Toggle Logic ---
@@ -91,48 +92,35 @@ async function decryptData(encryptedBase64, privateKey) {
         const decrypted = await window.crypto.subtle.decrypt({ name: "RSA-OAEP" }, privateKey, encryptedBuffer);
         return new TextDecoder().decode(decrypted);
     } catch (e) {
-        return "[خطأ في فك التشفير: ربما تغيرت المفاتيح]";
+        return "[Decryption error: keys might have changed]";
     }
 }
 // --- End Encryption Utilities ---
 
 function askForCode() {
-    const code = prompt("الرجاء إدخال الكود السري:");
+    const code = prompt("Please enter the secret code:");
     if (code !== null) {
+        console.log("Client: Emitting 'verify-code' with code:", code);
         socket.emit('verify-code', code);
     }
 }
 
 socket.on('auth-result', async (data) => {
+    console.log("Client: Received 'auth-result':", data);
     if (data.success) {
-        authScreen.style.display = 'none'; // إخفاء شاشة التحقق
         chatApp.style.display = 'flex';
-        let savedName =
-            localStorage.getItem('chat_user_name');
-
+        let savedName = localStorage.getItem('chat_user_name');
         if (!savedName) {
-
-            savedName =
-                prompt("ما هو اسمك؟");
-
-            if (savedName) {
-                localStorage.setItem(
-                    'chat_user_name',
-                    savedName
-                );
-            }
+            savedName = prompt("What is your name?") || "User";
         }
 
-        handle.value = savedName || "مستخدم";
-        socket.emit('set-handle', handle.value); // إرسال الاسم للسيرفر بعد التحقق
-
-        // توليد وتسجيل مفاتيح التشفير
-        const { keys, publicKeyJwk } = await getOrGenerateKeys(handle.value);
-        myKeyPair = keys;
-        socket.emit('register-public-key', { handle: handle.value, publicKey: publicKeyJwk });
+        handle.value = savedName;
+        console.log("Client: Emitting 'set-handle' with name:", savedName);
+        socket.emit('set-handle', savedName); // Send handle to server for validation
+        authScreen.style.display = 'none'; // Hide auth screen after handle is sent
 
         let roomName =
-            prompt("اسم الغرفة:", "General");
+            prompt("Room Name:", "General");
 
         if (!roomName || roomName.trim() === "") {
             roomName = "General";
@@ -141,36 +129,68 @@ socket.on('auth-result', async (data) => {
         socket.emit('join-room', roomName);
 
         currentChatTarget = roomName;
-        // تهيئة مخزن الرسائل للغرفة الافتراضية
+        // Initialize message store for the default room
         if (!messagesStore[roomName]) messagesStore[roomName] = [];
         
-        currentChatName.innerText = "غرفة: " + roomName;
+        currentChatName.innerText = "Room: " + roomName;
 
-        // إخفاء أزرار الاتصال في الغرف العامة
+        // Hide call buttons in general rooms
         document.getElementById('call-actions').style.display = roomName === 'General' ? 'none' : 'block';
 
         handle.disabled = true;
 
     } else {
-        authScreen.style.display = 'flex'; // إظهار شاشة التحقق مرة أخرى
-        alert(data.message || "الكود خاطئ");
+        authScreen.style.display = 'flex'; // Show auth screen again
+        alert(data.message || "Incorrect code");
         askForCode();
     }
 });
 
-// بدء عملية التحقق مباشرة عند تحميل الصفحة
+// Start verification immediately on load
 askForCode();
 
 
 
 logoutBtn.addEventListener('click', () => {
-
-    localStorage.removeItem('chat_user_name');
-
+    localStorage.clear();
     location.reload();
-
 });
 
+clearHistoryBtn.addEventListener('click', () => {
+    if (confirm("Are you sure you want to delete ALL chat history from the server? This cannot be undone.")) {
+        socket.emit('clear-history');
+    }
+});
+
+changeNameBtn.addEventListener('click', () => {
+    const newName = prompt("Enter your new name:", handle.value);
+    if (newName && newName.trim() !== "" && newName !== handle.value) {
+        socket.emit('set-handle', newName.trim());
+    }
+});
+
+socket.on('handle-error', (msg) => {
+    alert(msg);
+    const name = prompt("Please choose another name:");
+    if (name) socket.emit('set-handle', name.trim());
+});
+
+socket.on('handle-confirmed', async (confirmedName) => {
+    console.log("Client: Received 'handle-confirmed':", confirmedName);
+    const oldName = handle.value;
+    localStorage.setItem('chat_user_name', confirmedName);
+    handle.value = confirmedName;
+
+    // Generate and register encryption keys for the confirmed name
+    const { keys, publicKeyJwk } = await getOrGenerateKeys(confirmedName);
+    myKeyPair = keys;
+    console.log("Client: Emitting 'register-public-key' for handle:", confirmedName);
+    socket.emit('register-public-key', { handle: confirmedName, publicKey: publicKeyJwk });
+
+    if (oldName && oldName !== confirmedName && oldName !== "User") {
+        alert(`Name successfully updated to ${confirmedName}`);
+    }
+});
 
 
 async function uploadFileToServer(file) {
@@ -191,21 +211,26 @@ async function sendMessage() {
     const senderHandle = handle.value;
 
     if (msgText === "" || !senderHandle) {
+        console.warn("Client: sendMessage aborted - empty message or handle.");
         return;
     }
 
+    console.log("Client: sendMessage called. Target:", currentChatTarget, "Message:", msgText);
+
     if (currentChatTarget !== 'General') {
-        // طلب مفتاح المستقبل وتشفير الرسالة
+        // Request recipient key and encrypt message
         socket.emit('get-public-key', currentChatTarget, async (recipientKey) => {
+            console.log("Client: Received public key for", currentChatTarget, ":", recipientKey ? "found" : "not found");
             if (recipientKey) {
                 const encryptedMsg = await encryptData(msgText, recipientKey);
                 
-                // حفظ النص الأصلي محلياً مرتبطاً بالنص المشفر لنتمكن من رؤيته لاحقاً
+                // Save original text locally linked to encrypted text to see it later
                 encryptionCache.set(encryptedMsg, msgText);
-                // الحفاظ على حجم الذاكرة (آخر 200 رسالة مثلاً)
+                // Maintain cache size (e.g., last 200 messages)
                 if (encryptionCache.size > 200) encryptionCache.delete(encryptionCache.keys().next().value);
                 localStorage.setItem('encryption_cache', JSON.stringify([...encryptionCache]));
 
+                console.log("Client: Emitting 'send-private-message' (encrypted).");
                 socket.emit('send-private-message', {
                     recipientHandle: currentChatTarget,
                     message: encryptedMsg,
@@ -213,11 +238,12 @@ async function sendMessage() {
                     timestamp: new Date().toISOString()
                 });
             } else {
-                alert("تعذر الحصول على مفتاح التشفير لهذا المستخدم.");
+                alert("Could not retrieve encryption key for this user.");
             }
         });
     } else {
-        // رسالة عامة
+        // Public message
+        console.log("Client: Emitting 'chat' (public).");
         socket.emit('chat', {
             type: 'text',
             message: msgText,
@@ -259,19 +285,11 @@ fileInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 50 * 1024 * 1024) { // حد أقصى 50 ميجا مثلاً
-        alert("الملف كبير جداً");
+    if (file.size > 50 * 1024 * 1024) { // Max 50MB
+        alert("File is too large");
         return;
     }
-
-    let type = '';
-    if (file.type.startsWith('image/')) {
-        type = 'image';
-    } else if (file.type.startsWith('video/')) {
-        type = 'video';
-    } else {
-        type = 'file';
-    }
+    const type = 'file';
 
     try {
         const data = await uploadFileToServer(file);
@@ -283,117 +301,29 @@ fileInput.addEventListener('change', async (e) => {
             timestamp: new Date().toISOString() // Add timestamp
         });
     } catch (err) {
-        alert("فشل رفع الملف");
+        alert("File upload failed");
     }
 });
 
-
-
-recordBtn.addEventListener('click', async () => {
-
-    if (
-        !window.isSecureContext &&
-        window.location.hostname !== "localhost"
-    ) {
-
-        alert(
-            "الميكروفون يحتاج HTTPS"
-        );
-
-        return;
-    }
-
-
-
-    if (
-        !mediaRecorder ||
-        mediaRecorder.state === 'inactive'
-    ) {
-
-        try {
-
-            const stream =
-                await navigator.mediaDevices.getUserMedia({
-                    audio: true
-                });
-
-            mediaRecorder =
-                new MediaRecorder(stream);
-
-            audioChunks = [];
-
-
-
-            mediaRecorder.ondataavailable = e => {
-
-                audioChunks.push(e.data);
-
-            };
-
-
-
-            mediaRecorder.onstop = async () => {
-                const blob =
-                    new Blob(audioChunks, {
-                        type: 'audio/webm'
-                    });
-                
-                const file = new File([blob], "voice_msg.webm", { type: 'audio/webm' });
-                const data = await uploadFileToServer(file);
-                socket.emit('chat', {
-                    type: 'audio',
-                    message: data.filePath,
-                    handle: handle.value,
-                    timestamp: new Date().toISOString() // Add timestamp
-                });
-            };
-
-
-
-            mediaRecorder.start();
-
-            recordBtn.classList.add('recording');
-
-            recordBtn.innerText = '🛑';
-
-        } catch (err) {
-
-            alert(
-                "تعذر تشغيل الميكروفون"
-            );
-        }
-
-    } else {
-
-        mediaRecorder.stop();
-
-        recordBtn.classList.remove('recording');
-
-        recordBtn.innerText = '🎤';
-
-    }
-});
-
-// دالة لتحديد "المفتاح" الذي سنخزن تحته الرسالة (اسم المستخدم أو General)
+// Function to determine the storage key for a message (username or General)
 function getMessageTargetKey(data) {
     if (data.recipientHandle) {
-        // إذا كنت أنا المرسل، فالمفتاح هو المستلم. إذا كنت المستلم، فالمفتاح هو المرسل.
+        // If I am the sender, target is recipient. If I am the recipient, target is sender.
         return (data.senderHandle === handle.value) ? data.recipientHandle : data.senderHandle;
     }
     return 'General';
 }
 
-// دالة لإضافة الرسالة إلى الواجهة
 function addMessageToUI(data, shouldStore = true) {
     const targetKey = getMessageTargetKey(data);
     
-    // تخزين الرسالة في الذاكرة المحلية (messagesStore)
+    // Store message in local memory (messagesStore)
     if (shouldStore) {
         if (!messagesStore[targetKey]) messagesStore[targetKey] = [];
         messagesStore[targetKey].push(data);
     }
 
-    // لا نعرض الرسالة في الواجهة إلا إذا كانت تنتمي للمحادثة المفتوحة حالياً
+    // Only display message if it belongs to the currently open chat
     if (targetKey !== currentChatTarget) return;
 
     feedback.innerHTML = "";
@@ -401,14 +331,14 @@ function addMessageToUI(data, shouldStore = true) {
     const messageElement =
         document.createElement('div');
 
-    // تصحيح منطق الرسالة المرسلة: هل المرسل هو المستخدم الحالي؟
-    const senderIsMe = data.handle === handle.value || data.handle.includes("خاصة إلى") || data.senderHandle === handle.value;
+    // Correct sent message logic: Is the sender the current user?
+    const senderIsMe = data.handle === handle.value || (data.handle && data.handle.includes("private to")) || data.senderHandle === handle.value;
     
     messageElement.classList.add('chat-message');
     messageElement.classList.add(senderIsMe ? 'sent' : 'received');
-    messageElement.setAttribute('data-id', data.id); // تخزين معرف الرسالة في الـ DOM
+    messageElement.setAttribute('data-id', data.id); // Store message ID in the DOM
     
-    // إنشاء div لرأس الرسالة (يحتوي على اسم المرسل)
+    // Create div for message header (contains sender name)
     if (!senderIsMe) {
         const headerWrapper = document.createElement('div');
         headerWrapper.classList.add('chat-header');
@@ -416,14 +346,14 @@ function addMessageToUI(data, shouldStore = true) {
         messageElement.appendChild(headerWrapper);
     }
 
-    // إنشاء div لمحتوى الرسالة (نص، صورة، فيديو، صوت، ملف)
+    // Create div for message content (text, image, video, audio, file)
     const contentWrapper = document.createElement('div');
     contentWrapper.classList.add('chat-content-wrapper');
 
-    let contentElement; // هذا العنصر سيحتوي على الرسالة الفعلية/الوسائط
+    let contentElement; // This element will contain the actual message/media
     if (data.type === 'deleted') {
         contentElement = document.createElement('p');
-        contentElement.innerHTML = '<em>🚫 تم مسح هذه الرسالة</em>';
+        contentElement.innerHTML = '<em>🚫 This message was deleted</em>';
         contentElement.style.color = '#999';
     } else if (data.type === 'text') {
         contentElement =
@@ -436,7 +366,7 @@ function addMessageToUI(data, shouldStore = true) {
         contentElement.src =
             data.message;
         contentElement.loading = "lazy";
-        contentElement.alt = "صورة مرسلة"; // إضافة نص بديل لتحسين الوصولية
+        contentElement.alt = "Sent image"; // Add alt text for accessibility
     } else if (data.type === 'video') {
         contentElement =
             document.createElement('video');
@@ -454,33 +384,34 @@ function addMessageToUI(data, shouldStore = true) {
             document.createElement('a');
         contentElement.href =
             data.message;
-        contentElement.innerText = "📄 " + (data.fileName || "ملف مرفق");
+        contentElement.innerText = "📄 " + (data.fileName || "attached file");
         contentElement.target = "_blank";
         contentElement.style.display = "block";
     }
 
-    // إضافة عنصر المحتوى إلى غلاف المحتوى
+    // Add content element to content wrapper
     if (contentElement) {
         contentWrapper.appendChild(contentElement);
     }
-    messageElement.appendChild(contentWrapper);
 
-    // إضافة زر الحذف إذا كانت الرسالة من المستخدم الحالي وليست ممسوحة مسبقاً
+    // Add delete button if message is from current user and not already deleted
     if (senderIsMe && data.type !== 'deleted' && data.id) {
         const deleteBtn = document.createElement('span');
         deleteBtn.innerHTML = ' 🗑️';
         deleteBtn.style.cursor = 'pointer';
         deleteBtn.style.fontSize = '0.8em';
-        deleteBtn.title = 'حذف للجميع';
+        deleteBtn.title = 'Delete for everyone';
         deleteBtn.onclick = () => {
-            if (confirm('هل تريد حذف هذه الرسالة للجميع؟')) {
+            if (confirm('Do you want to delete this message for everyone?')) {
                 socket.emit('delete-message', { id: data.id });
             }
         };
         contentWrapper.appendChild(deleteBtn);
     }
 
-    // إضافة الوقت والصحين (WhatsApp Style)
+    messageElement.appendChild(contentWrapper);
+
+    // Add timestamp and checkmarks (WhatsApp Style)
     const metaWrapper = document.createElement('div');
     metaWrapper.style.textAlign = 'right';
     metaWrapper.style.marginTop = '4px';
@@ -504,19 +435,19 @@ function addMessageToUI(data, shouldStore = true) {
     }
 }
 
-// استقبال قائمة المستخدمين المتصلين
+// Receive online users list
 socket.on('online-users', (users) => {
     onlineUsersList.innerHTML = ''; 
 
-    // إضافة خيار الدردشة العامة دائماً في رأس القائمة
+    // Always add General Chat at the top
     const generalLi = document.createElement('li');
-    generalLi.innerHTML = "<strong>📢 الدردشة العامة</strong>";
+    generalLi.innerHTML = "<strong>📢 General Chat</strong>";
     if (currentChatTarget === 'General') generalLi.classList.add('active-chat');
     generalLi.onclick = () => switchChat('General');
     onlineUsersList.appendChild(generalLi);
 
     users.forEach(userHandle => {
-        if (userHandle === handle.value) return; // لا تظهر اسمي لنفسي
+        if (userHandle === handle.value) return; // Don't show myself in the list
         const li = document.createElement('li');
         li.innerText = userHandle;
         if (userHandle === currentChatTarget) li.classList.add('active-chat');
@@ -529,54 +460,80 @@ socket.on('online-users', (users) => {
 
 function switchChat(target) {
     currentChatTarget = target;
-    currentChatName.innerText = target === 'General' ? "غرفة: General" : "دردشة خاصة مع: " + target;
+    currentChatName.innerText = target === 'General' ? "Room: General" : "Private chat with: " + target;
     document.getElementById('call-actions').style.display = target === 'General' ? 'none' : 'block';
     
-    output.innerHTML = ""; // مسح الشاشة لعرض محادثة الهدف الجديد فقط
+    output.innerHTML = ""; 
     (messagesStore[target] || []).forEach(msg => addMessageToUI(msg, false));
     message.focus();
-    // إعادة رسم القائمة لتحديث العنصر المختار (Visual Feedback)
-    socket.emit('get-online-users'); // طلب تحديث القائمة (اختياري، أو يمكن تحديث الـ CSS يدوياً)
+    // Refresh list for visual feedback
+    socket.emit('get-online-users'); 
 }
 
-// استقبال رسالة جديدة
+// Handle forced local data reset from server
+socket.on('force-reset-local', () => {
+    console.log("⚠️ Administrator cleared all user data.");
+    localStorage.clear();
+    location.reload();
+});
+
+// Handle message deletion from server
+socket.on('message-deleted', (data) => {
+    // Update memory store so it persists room switches
+    Object.keys(messagesStore).forEach(room => {
+        messagesStore[room] = messagesStore[room].map(msg => {
+            if (msg.id === data.id) {
+                return { ...msg, type: 'deleted', message: '🚫 This message was deleted' };
+            }
+            return msg;
+        });
+    });
+
+    // Update UI
+    const msgDiv = document.querySelector(`.chat-message[data-id="${data.id}"]`);
+    if (msgDiv) {
+        const contentWrapper = msgDiv.querySelector('.chat-content-wrapper');
+        if (contentWrapper) {
+            contentWrapper.innerHTML = '<p style="color: #999;"><em>🚫 This message was deleted</em></p>';
+        }
+    }
+});
+
+// Handle history clearing from server
+socket.on('history-cleared', () => {
+    messagesStore = { 'General': [] };
+    output.innerHTML = "";
+    alert("Chat history has been cleared by an administrator.");
+});
+
+// Receive new message
+// This is the main entry point for displaying messages received from the server
 socket.on('chat', async (data) => {
     if (data.isEncrypted) {
-        // التأكد من وجود المفاتيح قبل محاولة فك التشفير
-        if (data.handle.includes("خاصة من") && myKeyPair) {
+        // Ensure keys exist before decryption
+        if (data.handle && data.handle.includes("private from") && myKeyPair) {
             data.message = await decryptData(data.message, myKeyPair.privateKey);
-        } else if (data.handle.includes("خاصة إلى") && encryptionCache.has(data.message)) {
-            // استعادة النص الأصلي من الذاكرة المحلية بدلاً من إظهار النص المشفر أو المحجوب
+        } else if (data.handle && data.handle.includes("private to") && encryptionCache.has(data.message)) {
+            // Restore original text from cache
             data.message = encryptionCache.get(data.message);
         }
     }
+    console.log("Client: Received 'chat' event:", data);
     addMessageToUI(data);
 });
 
-// التعامل مع حذف الرسالة
-socket.on('message-deleted', (data) => {
-    const msgDiv = document.querySelector(`.chat-message[data-id="${data.id}"]`);
-    if (msgDiv) {
-        const content = msgDiv.querySelector('.chat-content-wrapper');
-        content.innerHTML = '<p style="color: #999;"><em>🚫 تم مسح هذه الرسالة</em></p>';
-        // إزالة زر الحذف إن وجد
-        const delBtn = msgDiv.querySelector('span');
-        if (delBtn) delBtn.remove();
-    }
-});
-
-// استقبال سجل المحادثات عند الدخول
+// Receive chat history on join
 socket.on('chat-history', async (history) => {
-    output.innerHTML = ""; // مسح الشاشة قبل عرض السجل
-    messagesStore = { 'General': [] }; // إعادة تهيئة المخزن
+    output.innerHTML = ""; 
+    messagesStore = { 'General': [] }; // Reset store
     for (const data of history) {
-        if (data.isEncrypted && data.handle.includes("خاصة من") && myKeyPair) {
+        if (data.isEncrypted && data.handle && data.handle.includes("private from") && myKeyPair) {
             data.message = await decryptData(data.message, myKeyPair.privateKey);
-        } else if (data.isEncrypted && data.handle.includes("خاصة إلى") && encryptionCache.has(data.message)) {
-            // استعادة النص الأصلي عند تحميل سجل المحادثات
+        } else if (data.isEncrypted && data.handle && data.handle.includes("private to") && encryptionCache.has(data.message)) {
+            // Restore original text when loading history
             data.message = encryptionCache.get(data.message);
         }
-        addMessageToUI(data); // سيقوم المخزن بترتيبها وعرض المناسب فقط
+        addMessageToUI(data); // Store will handle filtering/displaying
     }
 });
 
@@ -585,7 +542,7 @@ socket.on('chat-history', async (history) => {
 socket.on('typing', (data) => {
 
     feedback.innerHTML =
-        `<p><em>${data} يكتب...</em></p>`;
+        `<p><em>${data} is typing...</em></p>`;
 
 });
 
@@ -614,14 +571,14 @@ startCallBtn.onclick = async () => {
     await peerConnection.setLocalDescription(offer);
     
     socket.emit('call-user', { to: currentChatTarget, offer });
-    callStatus.innerText = `جاري الاتصال بـ ${currentChatTarget}...`;
+    callStatus.innerText = `Calling ${currentChatTarget}...`;
     callOverlay.style.display = 'block';
     acceptCallBtn.style.display = 'none';
 };
 
 socket.on('incoming-call', async (data) => {
-    currentChatTarget = data.from; // التبديل لمحادثة المتصل تلقائياً
-    callStatus.innerText = `مكالمة واردة من ${data.from}`;
+    switchChat(data.from); // Properly switch UI and history to the caller
+    callStatus.innerText = `Incoming call from ${data.from}`;
     callOverlay.style.display = 'block';
     acceptCallBtn.style.display = 'inline-block';
     
@@ -632,14 +589,14 @@ socket.on('incoming-call', async (data) => {
         await peerConnection.setLocalDescription(answer);
         
         socket.emit('make-answer', { to: data.from, answer });
-        callStatus.innerText = "في مكالمة...";
+        callStatus.innerText = "In call...";
         acceptCallBtn.style.display = 'none';
     };
 });
 
 socket.on('answer-made', async (data) => {
     await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-    callStatus.innerText = "في مكالمة...";
+    callStatus.innerText = "In call...";
 });
 
 socket.on('ice-candidate', async (data) => {
@@ -655,7 +612,7 @@ hangupBtn.onclick = () => {
 
 socket.on('call-ended', () => {
     endCall();
-    alert("انتهت المكالمة");
+    alert("Call ended");
 });
 
 function endCall() {

@@ -1,61 +1,57 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق الدردشة الآمن</title>
+    <title>Secure Chat App</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💬</text></svg>">
 </head>
 <body>
     <div id="auth-screen" class="auth-screen">
-        <!-- هذا العنصر سيتم إخفاؤه بواسطة JS بعد التحقق -->
-        <p>الرجاء إدخال الكود السري لبدء الدردشة.</p>
+        <p>Please enter the secret code to start chatting.</p>
     </div>
 
     <div id="chat-app" class="chat-app" style="display: none;">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h3>المستخدمون المتصلون</h3>
-                <button id="theme-toggle" class="theme-toggle-btn">تبديل الوضع</button>
+                <h3>Online Users</h3>
+                <button id="theme-toggle" class="theme-toggle-btn">Toggle Theme</button>
             </div>
             <ul id="online-users-list" class="online-users-list">
-                <!-- قائمة المستخدمين ستضاف هنا بواسطة JS -->
+                <!-- User list added by JS -->
             </ul>
-            <button id="logout" class="logout-btn">تسجيل الخروج</button>
+            <button id="change-name-btn" class="theme-toggle-btn" style="margin-top: 10px; width: 100%;">Change Name</button>
+            <button id="clear-history-btn" class="logout-btn" style="margin-top: 10px; width: 100%; background-color: #f39c12;">Clear All History</button>
+            <button id="logout" class="logout-btn">Logout</button>
         </aside>
 
         <main class="chat-main">
             <header class="chat-header">
-                <h2 id="current-chat-name">غرفة: General</h2>
+                <h2 id="current-chat-name">Room: General</h2>
                 <div id="call-actions" style="display: none;">
                     <button id="start-call-btn" class="action-btn">📞</button>
                 </div>
             </header>
-            <!-- واجهة المكالمة -->
             <div id="call-overlay" class="call-overlay" style="display: none;">
                 <div class="call-info">
-                    <p id="call-status">جاري الاتصال...</p>
-                    <button id="hangup-btn" class="logout-btn">إنهاء المكالمة</button>
-                    <button id="accept-call-btn" class="send-btn" style="display: none;">قبول</button>
+                    <p id="call-status">Calling...</p>
+                    <button id="hangup-btn" class="logout-btn">End Call</button>
+                    <button id="accept-call-btn" class="send-btn" style="display: none;">Accept</button>
                 </div>
             </div>
             <div id="chat-window" class="chat-window">
-                <div id="output" class="chat-messages">
-                    <!-- الرسائل ستظهر هنا -->
-                </div>
-                <div id="feedback" class="chat-feedback">
-                    <!-- مؤشر الكتابة سيظهر هنا -->
-                </div>
+                <div id="output" class="chat-messages"></div>
+                <div id="feedback" class="chat-feedback"></div>
             </div>
             <footer class="chat-input-area">
-                <input type="text" id="handle" placeholder="اسمك" class="input-field handle-input" disabled>
-                <input type="text" id="message" placeholder="اكتب رسالتك..." class="input-field message-input">
+                <input type="text" id="handle" placeholder="Name" class="input-field handle-input" disabled>
+                <input type="text" id="message" placeholder="Type a message..." class="input-field message-input">
                 <div class="input-actions">
                     <button id="attach-btn" class="action-btn">📎</button>
                     <input type="file" id="file-input" style="display: none;">
                     <button id="record-btn" class="action-btn">🎤</button>
-                    <button id="send" class="send-btn">إرسال</button>
+                    <button id="send" class="send-btn">Send</button>
                 </div>
             </footer>
         </main>

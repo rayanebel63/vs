@@ -10,7 +10,7 @@ body {
     background-color: #f0f2f5; /* Light mode background */
     color: #333; /* Light mode text */
     transition: background-color 0.3s ease, color 0.3s ease;
-    direction: rtl; /* Right-to-left for Arabic */
+    direction: ltr; /* Left-to-right for English */
 }
 
 /* Dark Mode Styles */
@@ -85,7 +85,7 @@ body.dark-mode .auth-screen {
 .sidebar {
     width: 250px;
     background-color: #f8f9fa;
-    border-left: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
     display: flex;
     flex-direction: column;
     padding: 15px;
@@ -127,7 +127,7 @@ body.dark-mode .auth-screen {
 .online-users-list li.active-chat {
     background-color: #d1ecf1;
     font-weight: bold;
-    border-right: 4px solid #007bff;
+    border-left: 4px solid #007bff;
 }
 
 .logout-btn {
@@ -206,14 +206,14 @@ body.dark-mode .auth-screen {
 }
 
 .chat-message.sent {
-    align-self: flex-start; /* For RTL, sent messages are on the right */
+    align-self: flex-end; /* Sent messages on the right */
     background-color: #dcf8c6;
     border-radius: 10px 10px 0 10px;
     padding: 8px 12px;
 }
 
 .chat-message.received {
-    align-self: flex-end; /* For RTL, received messages are on the left */
+    align-self: flex-start; /* Received messages on the left */
     background-color: #f0f0f0;
     border-radius: 10px 10px 10px 0;
     padding: 8px 12px;

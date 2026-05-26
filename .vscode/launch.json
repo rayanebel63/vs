@@ -5,7 +5,7 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "تشغيل السيرفر (Node.js)",
+            "name": "Run Server (Node.js)",
             "skipFiles": [
                 "<node_internals>/**"
             ],
@@ -20,15 +20,18 @@
         {
             "type": "msedge",
             "request": "launch",
-            "name": "فتح المتصفح (Edge)",
+            "name": "Open Browser (Edge)",
             "url": "http://localhost:3000",
             "webRoot": "${workspaceFolder}"
         }
     ],
     "compounds": [
         {
-            "name": "تشغيل المشروع بالكامل",
-            "configurations": ["تشغيل السيرفر (Node.js)", "فتح المتصفح (Edge)"]
+            "name": "Run Full Project",
+            "configurations": [
+                "Run Server (Node.js)",
+                "Open Browser (Edge)"
+            ]
         }
     ]
 }
