@@ -23,7 +23,13 @@ try {
     server = http.createServer(app);
 }
 
-const io = new Server(server);
+const io = new Server(server, {
+    cors: {
+        origin: "*", // السماح بالاتصال من أي مصدر عند النشر
+        methods: ["GET", "POST"]
+    },
+    transports: ['websocket', 'polling'] // ضمان استقرار الاتصال في السحاب
+});
 
 const dbPath = './chat.db';
 let db;
@@ -110,8 +116,9 @@ app.post('/upload', upload.single('file'), (req, res) => {
     }
 });
 io.on('connection', (socket) => {
-    // قراءة الـ IP الحقيقي حتى لو كان التطبيق خلف Proxy مثل Render أو Cloudflare
-    const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
+    // تصحيح قراءة الـ IP لاستخراج العنوان الحقيقي فقط وتفادي حظر جميع المستخدمين
+    const forwarded = socket.handshake.headers['x-forwarded-for'];
+    const clientIp = forwarded ? forwarded.split(',')[0].trim() : socket.handshake.address;
     socket.authorized = false; // By default, user is not authorized
     console.log(`Server: New connection from ${clientIp}. Socket ID: ${socket.id}`);
 
