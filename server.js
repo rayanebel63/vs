@@ -110,7 +110,8 @@ app.post('/upload', upload.single('file'), (req, res) => {
     }
 });
 io.on('connection', (socket) => {
-    const clientIp = socket.handshake.address;
+    // قراءة الـ IP الحقيقي حتى لو كان التطبيق خلف Proxy مثل Render أو Cloudflare
+    const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
     socket.authorized = false; // By default, user is not authorized
     console.log(`Server: New connection from ${clientIp}. Socket ID: ${socket.id}`);
 
@@ -349,7 +350,7 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     const protocol = server instanceof https.Server ? 'https' : 'http';
     console.log(`Server running on ${protocol}://localhost:${PORT} and on local network.`);
