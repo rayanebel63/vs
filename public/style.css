@@ -358,3 +358,10 @@ body.dark-mode .auth-screen {
     justify-content: space-between;
     align-items: center;
 }
+
+/* Hide ad sidebar on small screens */
+@media (max-width: 768px) { /* يمكنك تعديل هذه القيمة حسب الحاجة */
+    .ad-sidebar-left {
+        display: none !important;
+    }
+}

@@ -342,7 +342,9 @@ function addMessageToUI(data, shouldStore = true) {
     if (!senderIsMe) {
         const headerWrapper = document.createElement('div');
         headerWrapper.classList.add('chat-header');
-        headerWrapper.innerHTML = `<strong>${data.handle}</strong>`;
+        const strong = document.createElement('strong');
+        strong.textContent = data.handle;
+        headerWrapper.appendChild(strong);
         messageElement.appendChild(headerWrapper);
     }
 
@@ -353,7 +355,9 @@ function addMessageToUI(data, shouldStore = true) {
     let contentElement; // This element will contain the actual message/media
     if (data.type === 'deleted') {
         contentElement = document.createElement('p');
-        contentElement.innerHTML = '<em>🚫 This message was deleted</em>';
+        const em = document.createElement('em');
+        em.textContent = '🚫 This message was deleted';
+        contentElement.appendChild(em);
         contentElement.style.color = '#999';
     } else if (data.type === 'text') {
         contentElement =
@@ -494,7 +498,13 @@ socket.on('message-deleted', (data) => {
     if (msgDiv) {
         const contentWrapper = msgDiv.querySelector('.chat-content-wrapper');
         if (contentWrapper) {
-            contentWrapper.innerHTML = '<p style="color: #999;"><em>🚫 This message was deleted</em></p>';
+            contentWrapper.innerHTML = ''; // Clear previous content
+            const p = document.createElement('p');
+            p.style.color = '#999';
+            const em = document.createElement('em');
+            em.textContent = '🚫 This message was deleted';
+            p.appendChild(em);
+            contentWrapper.appendChild(p);
         }
     }
 });
@@ -541,8 +551,10 @@ socket.on('chat-history', async (history) => {
 
 socket.on('typing', (data) => {
 
-    feedback.innerHTML =
-        `<p><em>${data} is typing...</em></p>`;
+    feedback.innerHTML = '';
+    const em = document.createElement('em');
+    em.textContent = `${data} is typing...`;
+    feedback.appendChild(em);
 
 });
 

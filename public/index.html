@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Secure Chat App</title>
+    <!-- Content Security Policy لرفع مستوى الأمان ومنع XSS -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://pagead2.googlesyndication.com /socket.io/socket.io.js; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.google.com; connect-src 'self' ws: wss:;">
     <link rel="stylesheet" href="style.css">
+    <!-- Google AdSense Main Script -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID" crossorigin="anonymous"></script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💬</text></svg>">
 </head>
 <body>
@@ -13,6 +17,21 @@
     </div>
 
     <div id="chat-app" class="chat-app" style="display: none;">
+        <!-- قسم الإعلانات الجانبي على اليسار -->
+        <div class="ad-sidebar-left" style="width: 130px; flex-shrink: 0; border-right: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; padding: 10px; gap: 15px; overflow-y: auto;">
+            <small style="font-size: 0.7rem; color: #888; letter-spacing: 1px;">ADVERTISEMENT</small>
+            <!-- ضع كود الإعلان هنا (مثلاً Google AdSense) -->
+            <!-- تأكد من استبدال 'ca-pub-YOUR_PUBLISHER_ID' و 'YOUR_AD_SLOT_ID' بالمعرفات الخاصة بك من AdSense -->
+            <ins class="adsbygoogle"
+                 style="display:inline-block;width:110px;height:250px"
+                 data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+                 data-ad-slot="YOUR_AD_SLOT_ID"></ins>
+            <script>
+                 (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+            <!-- نهاية كود الإعلان -->
+        </div>
+
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h3>Online Users</h3>
