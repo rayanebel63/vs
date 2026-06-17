@@ -1,4 +1,4 @@
-/* General Styles */
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
@@ -7,16 +7,16 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background-color: #f0f2f5; /* Light mode background */
-    color: #333; /* Light mode text */
+    background-color: #f0f2f5; 
+    color: #333; 
     transition: background-color 0.3s ease, color 0.3s ease;
-    direction: ltr; /* Left-to-right for English */
+    direction: ltr; 
 }
 
-/* Dark Mode Styles */
+
 body.dark-mode {
-    background-color: #1a202c; /* Dark mode background */
-    color: #e2e8f0; /* Dark mode text */
+    background-color: #1a202c; 
+    color: #e2e8f0; 
 }
 
 body.dark-mode .chat-app,
@@ -52,7 +52,6 @@ body.dark-mode .theme-toggle-btn:hover {
     background-color: #636b6f;
 }
 
-/* Auth Screen */
 .auth-screen {
     background-color: #fff;
     padding: 30px;
@@ -63,13 +62,13 @@ body.dark-mode .theme-toggle-btn:hover {
     color: #555;
 }
 
-body.dark-mode .auth-screen {
+.body.dark-mode .auth-screen {
     background-color: #2d3748;
     color: #e2e8f0;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* Chat App Layout */
+
 .chat-app {
     display: flex;
     width: 90%;
@@ -81,7 +80,7 @@ body.dark-mode .auth-screen {
     overflow: hidden;
 }
 
-/* Sidebar */
+
 .sidebar {
     width: 250px;
     background-color: #f8f9fa;
@@ -160,7 +159,7 @@ body.dark-mode .auth-screen {
     background-color: #0056b3;
 }
 
-/* Chat Main Area */
+
 .chat-main {
     flex-grow: 1;
     display: flex;
@@ -197,7 +196,7 @@ body.dark-mode .auth-screen {
     color: #888;
 }
 
-/* Message Styles */
+
 .chat-message {
     display: flex;
     flex-direction: column;
@@ -206,14 +205,14 @@ body.dark-mode .auth-screen {
 }
 
 .chat-message.sent {
-    align-self: flex-end; /* Sent messages on the right */
+    align-self: flex-end; 
     background-color: #dcf8c6;
     border-radius: 10px 10px 0 10px;
     padding: 8px 12px;
 }
 
 .chat-message.received {
-    align-self: flex-start; /* Received messages on the left */
+    align-self: flex-start; 
     background-color: #f0f0f0;
     border-radius: 10px 10px 10px 0;
     padding: 8px 12px;
@@ -258,10 +257,10 @@ body.dark-mode .auth-screen {
 
 .ticks {
     font-size: 0.7em;
-    color: #007bff; /* Blue for sent/read ticks */
+    color: #007bff; 
 }
 
-/* Input Area */
+
 .chat-input-area {
     display: flex;
     padding: 15px;
@@ -280,7 +279,7 @@ body.dark-mode .auth-screen {
 }
 
 .handle-input {
-    width: 100px; /* Fixed width for handle */
+    width: 100px; 
     flex-grow: 0;
 }
 
@@ -329,7 +328,7 @@ body.dark-mode .auth-screen {
     background-color: #c82333;
 }
 
-/* Call UI */
+
 .call-overlay {
     position: absolute;
     top: 60px;
@@ -359,8 +358,8 @@ body.dark-mode .auth-screen {
     align-items: center;
 }
 
-/* Hide ad sidebar on small screens */
-@media (max-width: 768px) { /* يمكنك تعديل هذه القيمة حسب الحاجة */
+
+@media (max-width: 768px) { 
     .ad-sidebar-left {
         display: none !important;
     }
