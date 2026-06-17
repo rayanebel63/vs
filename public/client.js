@@ -16,15 +16,15 @@ const changeNameBtn = document.getElementById('change-name-btn');
 const clearHistoryBtn = document.getElementById('clear-history-btn');
 
 const authScreen = document.getElementById('auth-screen');
-let currentChatTarget = 'General'; // 'General' for group, otherwise username
+let currentChatTarget = 'General'; 
 let messagesStore = { 'General': [] };
 let usersList = [];
 
 let mediaRecorder;
 let audioChunks = [];
-let myKeyPair; // To store user encryption keys
+let myKeyPair; 
 
-// WebRTC Variables
+
 let peerConnection;
 let localStream;
 const iceServers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
@@ -35,10 +35,10 @@ const callStatus = document.getElementById('call-status');
 const hangupBtn = document.getElementById('hangup-btn');
 const acceptCallBtn = document.getElementById('accept-call-btn');
 
-// Local memory to store original text of sent messages (encrypted for recipient only)
+
 let encryptionCache = new Map(JSON.parse(localStorage.getItem('encryption_cache') || '[]'));
 
-// --- Theme Toggle Logic ---
+
 function applyTheme(theme) {
     document.body.classList.toggle('dark-mode', theme === 'dark');
     localStorage.setItem('theme', theme);
@@ -50,12 +50,12 @@ themeToggle.addEventListener('click', () => {
     applyTheme(newTheme);
 });
 
-// Apply saved theme on load
+
 const savedTheme = localStorage.getItem('theme') || 'light';
 applyTheme(savedTheme);
-// --- End Theme Toggle Logic ---
 
-// --- Encryption Utilities ---
+
+
 async function getOrGenerateKeys(userHandle) {
     const storageKey = `chat_keys_${userHandle}`;
     const saved = localStorage.getItem(storageKey);
@@ -95,7 +95,7 @@ async function decryptData(encryptedBase64, privateKey) {
         return "[Decryption error: keys might have changed]";
     }
 }
-// --- End Encryption Utilities ---
+
 
 function askForCode() {
     const code = prompt("Please enter the secret code:");
@@ -129,24 +129,24 @@ socket.on('auth-result', async (data) => {
         socket.emit('join-room', roomName);
 
         currentChatTarget = roomName;
-        // Initialize message store for the default room
+       
         if (!messagesStore[roomName]) messagesStore[roomName] = [];
         
         currentChatName.innerText = "Room: " + roomName;
 
-        // Hide call buttons in general rooms
+       
         document.getElementById('call-actions').style.display = roomName === 'General' ? 'none' : 'block';
 
         handle.disabled = true;
 
     } else {
-        authScreen.style.display = 'flex'; // Show auth screen again
+        authScreen.style.display = 'flex'; 
         alert(data.message || "Incorrect code");
         askForCode();
     }
 });
 
-// Start verification immediately on load
+
 askForCode();
 
 
@@ -218,15 +218,15 @@ async function sendMessage() {
     console.log("Client: sendMessage called. Target:", currentChatTarget, "Message:", msgText);
 
     if (currentChatTarget !== 'General') {
-        // Request recipient key and encrypt message
+       
         socket.emit('get-public-key', currentChatTarget, async (recipientKey) => {
             console.log("Client: Received public key for", currentChatTarget, ":", recipientKey ? "found" : "not found");
             if (recipientKey) {
                 const encryptedMsg = await encryptData(msgText, recipientKey);
                 
-                // Save original text locally linked to encrypted text to see it later
+               
                 encryptionCache.set(encryptedMsg, msgText);
-                // Maintain cache size (e.g., last 200 messages)
+                
                 if (encryptionCache.size > 200) encryptionCache.delete(encryptionCache.keys().next().value);
                 localStorage.setItem('encryption_cache', JSON.stringify([...encryptionCache]));
 
@@ -285,7 +285,7 @@ fileInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 50 * 1024 * 1024) { // Max 50MB
+    if (file.size > 50 * 1024 * 1024) { 
         alert("File is too large");
         return;
     }
@@ -298,17 +298,17 @@ fileInput.addEventListener('change', async (e) => {
             message: data.filePath,
             handle: handle.value,
             fileName: data.originalName,
-            timestamp: new Date().toISOString() // Add timestamp
+            timestamp: new Date().toISOString() 
         });
     } catch (err) {
         alert("File upload failed");
     }
 });
 
-// Function to determine the storage key for a message (username or General)
+
 function getMessageTargetKey(data) {
     if (data.recipientHandle) {
-        // If I am the sender, target is recipient. If I am the recipient, target is sender.
+        
         return (data.senderHandle === handle.value) ? data.recipientHandle : data.senderHandle;
     }
     return 'General';
@@ -317,13 +317,13 @@ function getMessageTargetKey(data) {
 function addMessageToUI(data, shouldStore = true) {
     const targetKey = getMessageTargetKey(data);
     
-    // Store message in local memory (messagesStore)
+   
     if (shouldStore) {
         if (!messagesStore[targetKey]) messagesStore[targetKey] = [];
         messagesStore[targetKey].push(data);
     }
 
-    // Only display message if it belongs to the currently open chat
+    
     if (targetKey !== currentChatTarget) return;
 
     feedback.innerHTML = "";
@@ -331,14 +331,14 @@ function addMessageToUI(data, shouldStore = true) {
     const messageElement =
         document.createElement('div');
 
-    // Correct sent message logic: Is the sender the current user?
+    
     const senderIsMe = data.handle === handle.value || (data.handle && data.handle.includes("private to")) || data.senderHandle === handle.value;
     
     messageElement.classList.add('chat-message');
     messageElement.classList.add(senderIsMe ? 'sent' : 'received');
-    messageElement.setAttribute('data-id', data.id); // Store message ID in the DOM
+    messageElement.setAttribute('data-id', data.id); 
     
-    // Create div for message header (contains sender name)
+   
     if (!senderIsMe) {
         const headerWrapper = document.createElement('div');
         headerWrapper.classList.add('chat-header');
@@ -348,11 +348,11 @@ function addMessageToUI(data, shouldStore = true) {
         messageElement.appendChild(headerWrapper);
     }
 
-    // Create div for message content (text, image, video, audio, file)
+    
     const contentWrapper = document.createElement('div');
     contentWrapper.classList.add('chat-content-wrapper');
 
-    let contentElement; // This element will contain the actual message/media
+    let contentElement; 
     if (data.type === 'deleted') {
         contentElement = document.createElement('p');
         const em = document.createElement('em');
@@ -370,7 +370,7 @@ function addMessageToUI(data, shouldStore = true) {
         contentElement.src =
             data.message;
         contentElement.loading = "lazy";
-        contentElement.alt = "Sent image"; // Add alt text for accessibility
+        contentElement.alt = "Sent image";
     } else if (data.type === 'video') {
         contentElement =
             document.createElement('video');
@@ -393,12 +393,12 @@ function addMessageToUI(data, shouldStore = true) {
         contentElement.style.display = "block";
     }
 
-    // Add content element to content wrapper
+    
     if (contentElement) {
         contentWrapper.appendChild(contentElement);
     }
 
-    // Add delete button if message is from current user and not already deleted
+   
     if (senderIsMe && data.type !== 'deleted' && data.id) {
         const deleteBtn = document.createElement('span');
         deleteBtn.innerHTML = ' 🗑️';
@@ -415,7 +415,7 @@ function addMessageToUI(data, shouldStore = true) {
 
     messageElement.appendChild(contentWrapper);
 
-    // Add timestamp and checkmarks (WhatsApp Style)
+   
     const metaWrapper = document.createElement('div');
     metaWrapper.style.textAlign = 'right';
     metaWrapper.style.marginTop = '4px';
@@ -439,11 +439,11 @@ function addMessageToUI(data, shouldStore = true) {
     }
 }
 
-// Receive online users list
+
 socket.on('online-users', (users) => {
     onlineUsersList.innerHTML = ''; 
 
-    // Always add General Chat at the top
+    
     const generalLi = document.createElement('li');
     generalLi.innerHTML = "<strong>📢 General Chat</strong>";
     if (currentChatTarget === 'General') generalLi.classList.add('active-chat');
@@ -451,7 +451,7 @@ socket.on('online-users', (users) => {
     onlineUsersList.appendChild(generalLi);
 
     users.forEach(userHandle => {
-        if (userHandle === handle.value) return; // Don't show myself in the list
+        if (userHandle === handle.value) return; 
         const li = document.createElement('li');
         li.innerText = userHandle;
         if (userHandle === currentChatTarget) li.classList.add('active-chat');
@@ -470,20 +470,20 @@ function switchChat(target) {
     output.innerHTML = ""; 
     (messagesStore[target] || []).forEach(msg => addMessageToUI(msg, false));
     message.focus();
-    // Refresh list for visual feedback
+   
     socket.emit('get-online-users'); 
 }
 
-// Handle forced local data reset from server
+
 socket.on('force-reset-local', () => {
     console.log("⚠️ Administrator cleared all user data.");
     localStorage.clear();
     location.reload();
 });
 
-// Handle message deletion from server
+
 socket.on('message-deleted', (data) => {
-    // Update memory store so it persists room switches
+    
     Object.keys(messagesStore).forEach(room => {
         messagesStore[room] = messagesStore[room].map(msg => {
             if (msg.id === data.id) {
@@ -493,7 +493,7 @@ socket.on('message-deleted', (data) => {
         });
     });
 
-    // Update UI
+    
     const msgDiv = document.querySelector(`.chat-message[data-id="${data.id}"]`);
     if (msgDiv) {
         const contentWrapper = msgDiv.querySelector('.chat-content-wrapper');
@@ -509,22 +509,21 @@ socket.on('message-deleted', (data) => {
     }
 });
 
-// Handle history clearing from server
+
 socket.on('history-cleared', () => {
     messagesStore = { 'General': [] };
     output.innerHTML = "";
     alert("Chat history has been cleared by an administrator.");
 });
 
-// Receive new message
-// This is the main entry point for displaying messages received from the server
+
 socket.on('chat', async (data) => {
     if (data.isEncrypted) {
-        // Ensure keys exist before decryption
+       
         if (data.handle && data.handle.includes("private from") && myKeyPair) {
             data.message = await decryptData(data.message, myKeyPair.privateKey);
         } else if (data.handle && data.handle.includes("private to") && encryptionCache.has(data.message)) {
-            // Restore original text from cache
+           
             data.message = encryptionCache.get(data.message);
         }
     }
@@ -532,18 +531,18 @@ socket.on('chat', async (data) => {
     addMessageToUI(data);
 });
 
-// Receive chat history on join
+
 socket.on('chat-history', async (history) => {
     output.innerHTML = ""; 
-    messagesStore = { 'General': [] }; // Reset store
+    messagesStore = { 'General': [] }; 
     for (const data of history) {
         if (data.isEncrypted && data.handle && data.handle.includes("private from") && myKeyPair) {
             data.message = await decryptData(data.message, myKeyPair.privateKey);
         } else if (data.isEncrypted && data.handle && data.handle.includes("private to") && encryptionCache.has(data.message)) {
-            // Restore original text when loading history
+            
             data.message = encryptionCache.get(data.message);
         }
-        addMessageToUI(data); // Store will handle filtering/displaying
+        addMessageToUI(data); 
     }
 });
 
@@ -558,7 +557,7 @@ socket.on('typing', (data) => {
 
 });
 
-// --- Voice Call Logic (WebRTC) ---
+
 
 async function initPeerConnection(targetUser) {
     peerConnection = new RTCPeerConnection(iceServers);
@@ -589,7 +588,7 @@ startCallBtn.onclick = async () => {
 };
 
 socket.on('incoming-call', async (data) => {
-    switchChat(data.from); // Properly switch UI and history to the caller
+    switchChat(data.from); 
     callStatus.innerText = `Incoming call from ${data.from}`;
     callOverlay.style.display = 'block';
     acceptCallBtn.style.display = 'inline-block';
