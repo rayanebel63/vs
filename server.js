@@ -1,6 +1,6 @@
 const express = require('express');
 const http = require('http');
-const https = require('https'); // Import HTTPS module
+const https = require('https'); 
 const { Server } = require('socket.io');
 const multer = require('multer');
 const path = require('path');
@@ -9,10 +9,9 @@ const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
 
-// Read certificate and key files
 let server;
 try {
-    // Attempt to run HTTPS if files exist
+    
     const privateKey = fs.readFileSync(path.join(__dirname, 'key.pem'), 'utf8');
     const certificate = fs.readFileSync(path.join(__dirname, 'cert.pem'), 'utf8');
     const credentials = { key: privateKey, cert: certificate };
@@ -25,37 +24,37 @@ try {
 
 const io = new Server(server, {
     cors: {
-        origin: "*", // السماح بالاتصال من أي مصدر عند النشر
+        origin: "*",
         methods: ["GET", "POST"]
     },
-    transports: ['websocket', 'polling'] // ضمان استقرار الاتصال في السحاب
+    transports: ['websocket', 'polling'] 
 });
 
 const dbPath = './chat.db';
 let db;
 
-// Public keys storage for E2EE
+
 const publicKeys = {};
 
 function initializeDatabase() {
     db = new sqlite3.Database(dbPath, (err) => {
         if (err) {
             console.error("❌ Database connection error:", err.message);
-            // Attempt to delete corrupted DB and retry
+           
             if (err.code === 'SQLITE_CANTOPEN' || err.code === 'SQLITE_NOTADB') {
                 console.error("⚠️ chat.db file might be corrupted or inaccessible. Attempting to re-create...");
                 if (fs.existsSync(dbPath)) {
                     try {
                         fs.unlinkSync(dbPath);
                         console.log("✅ Old chat.db removed. Re-initializing database.");
-                        initializeDatabase(); // Recursive call to re-initialize
+                        initializeDatabase(); 
                         return;
                     } catch (unlinkErr) {
                         console.error("❌ Failed to remove corrupted chat.db:", unlinkErr.message);
                     }
                 }
             }
-            return; // Exit if database connection failed
+            return;
         }
         console.log("✅ Connected to SQLite database.");
 
@@ -77,13 +76,13 @@ function initializeDatabase() {
             });
     });
 }
-initializeDatabase(); // Call it to start
+initializeDatabase(); 
 const SECRET_CODE = "2013"; 
 let users = {}; 
 
 const loginAttempts = new Map();
 const MAX_ATTEMPTS = 3;
-const LOCKOUT_DURATION = 60000; // 1 minute
+const LOCKOUT_DURATION = 60000; 
 
 const uploadDir = './uploads';
 try {
@@ -107,7 +106,7 @@ const upload = multer({ storage });
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// File upload route
+
 app.post('/upload', upload.single('file'), (req, res) => {
     if (req.file) {
         res.json({ filePath: `/uploads/${req.file.filename}`, originalName: req.file.originalname });
@@ -116,18 +115,18 @@ app.post('/upload', upload.single('file'), (req, res) => {
     }
 });
 io.on('connection', (socket) => {
-    // تصحيح قراءة الـ IP لاستخراج العنوان الحقيقي فقط وتفادي حظر جميع المستخدمين
+    
     const forwarded = socket.handshake.headers['x-forwarded-for'];
     const clientIp = forwarded ? forwarded.split(',')[0].trim() : socket.handshake.address;
-    socket.authorized = false; // By default, user is not authorized
+    socket.authorized = false; 
     console.log(`Server: New connection from ${clientIp}. Socket ID: ${socket.id}`);
 
-    // Verify secret code
+    
     socket.on('verify-code', (code) => {
         const now = Date.now();
         let log = loginAttempts.get(clientIp) || { attempts: 0, lockoutUntil: 0 };
 
-        // Check if IP is currently locked out
+        
         if (log.lockoutUntil > now) {
             const wait = Math.ceil((log.lockoutUntil - now) / 1000);
             console.warn(`Server: IP ${clientIp} is locked out. Remaining: ${wait}s`);
@@ -136,8 +135,8 @@ io.on('connection', (socket) => {
 
         if (code === SECRET_CODE) {
             console.log(`Server: Socket ${socket.id} authorized.`);
-            socket.authorized = true; // Authorize the user
-            loginAttempts.delete(clientIp); // Clear failed attempts on success
+            socket.authorized = true; 
+            loginAttempts.delete(clientIp); 
             socket.emit('auth-result', { success: true });
         } else {
             log.attempts++;
@@ -153,12 +152,12 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Set username
+    
     socket.on('set-handle', (handle) => {
         console.log(`Server: Received 'set-handle' from ${socket.id}. Handle: ${handle}. Authorized: ${socket.authorized}`);
-        if (!socket.authorized) return; // Prevent execution if not authorized
+        if (!socket.authorized) return; 
 
-        // Check if name is already taken by another active user
+       
         const isTaken = Object.values(users).some(u => u === handle && users[socket.id] !== handle);
         if (isTaken) {
             console.warn(`Server: Handle '${handle}' is already taken.`);
@@ -167,10 +166,10 @@ io.on('connection', (socket) => {
 
         users[socket.id] = handle;
         console.log(`Server: Socket ${socket.id} set handle to '${handle}'. Current online users:`, Object.values(users));
-        socket.emit('handle-confirmed', handle); // Notify client that name is accepted
+        socket.emit('handle-confirmed', handle); 
         io.emit('online-users', Object.values(users));
 
-        // Load last 100 messages for the user (public or private)
+       
         db.all("SELECT * FROM messages WHERE recipientHandle IS NULL OR recipientHandle = ? OR handle = ? ORDER BY id DESC LIMIT 100", 
                [handle, handle], (err, rows) => {
             if (err) return;
@@ -194,7 +193,7 @@ io.on('connection', (socket) => {
         socket.emit('online-users', Object.values(users));
     });
 
-    // Register user's public key (for encryption)
+    
     socket.on('register-public-key', (data) => {
         console.log(`Server: Received 'register-public-key' for handle: ${data.handle}. Authorized: ${socket.authorized}`);
         if (!socket.authorized) return;
@@ -223,9 +222,9 @@ io.on('connection', (socket) => {
                 console.error("❌ Error inserting message into DB:", err.message);
                 return;
             }
-            data.id = this.lastID; // Get the ID of the newly inserted row
+            data.id = this.lastID; 
             console.log(`Server: Public message from ${data.handle} broadcasted. ID: ${data.id}`);
-            io.emit('chat', data); // Broadcast the message to all connected clients
+            io.emit('chat', data); 
         });
     });
 
@@ -246,10 +245,10 @@ io.on('connection', (socket) => {
                     console.error("❌ Error inserting private message into DB:", err.message);
                     return;
                 }
-                privateMsg.id = this.lastID; // Get the ID of the newly inserted row
+                privateMsg.id = this.lastID; 
                 console.log(`Server: Private message from ${data.senderHandle} to ${data.recipientHandle} sent. ID: ${privateMsg.id}`);
-                io.to(recipientSocketId).emit('chat', privateMsg); // Send to recipient
-                socket.emit('chat', { ...privateMsg, handle: `(private to ${data.recipientHandle})` }); // Send to sender
+                io.to(recipientSocketId).emit('chat', privateMsg); 
+                socket.emit('chat', { ...privateMsg, handle: `(private to ${data.recipientHandle})` }); 
             });
         } else {
             socket.emit('chat', { type: 'text', message: `User ${data.recipientHandle} is not online.`, handle: 'System' });
@@ -260,7 +259,7 @@ io.on('connection', (socket) => {
     socket.on('delete-message', (data) => {
         if (!socket.authorized) return;
         
-        // Only allow sender to delete their own messages
+       
         db.run("UPDATE messages SET type = 'deleted', message = '🚫 This message was deleted' WHERE id = ? AND handle = ?", 
                [data.id, users[socket.id]], function(err) {
             if (err) {
@@ -331,21 +330,21 @@ io.on('connection', (socket) => {
     });
 
     socket.on('typing', (handle) => {
-        // console.log(`Server: User ${handle} is typing.`); // Can be noisy, uncomment if needed
+        
         if (!socket.authorized) return;
         socket.broadcast.emit('typing', handle);
     });
 
-    // Clear all active usernames and force clients to reset local data
+    
     socket.on('clear-users', () => {
         if (!socket.authorized) return;
-        // 1. Wipe server memory (active sessions)
+        
         Object.keys(users).forEach(id => delete users[id]);
         Object.keys(publicKeys).forEach(handle => delete publicKeys[handle]);
         
         console.log("Server: All active users and public keys cleared.");
         io.emit('online-users', []);
-        io.emit('force-reset-local'); // Trigger a full local storage wipe on all clients
+        io.emit('force-reset-local'); 
     });
 
     socket.on('disconnect', () => {
@@ -353,7 +352,7 @@ io.on('connection', (socket) => {
         delete users[socket.id];
         if (userHandle) delete publicKeys[userHandle];
         console.log(`Server: Socket ${socket.id} (${userHandle}) disconnected. Remaining online users:`, Object.values(users));
-        io.emit('online-users', Object.values(users)); // Update online list for everyone
+        io.emit('online-users', Object.values(users)); 
     });
 });
 
